@@ -3,10 +3,12 @@ package com.enzhongwen.hanyu4
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.enzhongwen.hanyu4.db.SavedViewModel
 
 @Composable
 fun NavGraph(
@@ -14,7 +16,8 @@ fun NavGraph(
     endActivity: () -> Unit,
     darkTheme: Boolean,
     darkMode: () -> Unit,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    savedViewModel: SavedViewModel = viewModel()
 ) {
     NavHost(
         navController = navController,
@@ -56,6 +59,7 @@ fun NavGraph(
                 lesson = it.arguments!!.getInt("lesson"),
                 navController = navController,
                 onBack = onBack,
+                savedViewModel = savedViewModel
             )
             BackHandler {
                 onBack()
@@ -69,7 +73,8 @@ fun NavGraph(
                 darkTheme = darkTheme,
                 navController = navController,
                 darkMode = darkMode,
-                endActivity = endActivity
+                endActivity = endActivity,
+                savedViewModel = savedViewModel
             )
         }
         composable(
@@ -85,7 +90,8 @@ fun NavGraph(
                 modifier = Modifier,
                 darkMode = darkMode,
                 endActivity = endActivity,
-                onBack = onBack
+                onBack = onBack,
+                savedViewModel = savedViewModel
             )
         }
         composable(
@@ -101,7 +107,8 @@ fun NavGraph(
                 darkTheme = darkTheme,
                 navController = navController,
                 darkMode = darkMode,
-                endActivity = endActivity
+                endActivity = endActivity,
+                savedViewModel = savedViewModel
             )
         }
     }

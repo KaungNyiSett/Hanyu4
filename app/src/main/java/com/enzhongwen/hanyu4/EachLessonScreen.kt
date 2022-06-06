@@ -10,6 +10,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,9 +22,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import com.enzhongwen.hanyu4.data.*
+import com.enzhongwen.hanyu4.db.SavedViewModel
 import com.enzhongwen.hanyu4.db.VocabData
 import com.enzhongwen.hanyu4.reading.book4.*
-import com.enzhongwen.hanyu4.ui.theme.BlueDark
 import com.enzhongwen.hanyu4.ui.theme.BlueLight
 import com.enzhongwen.hanyu4.ui.theme.CustomPurple
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -38,6 +39,7 @@ fun EachLessonScreen(
     lesson: Int,
     navController: NavController,
     onBack: () -> Unit,
+    savedViewModel: SavedViewModel
 ) {
     var onOff by rememberSaveable {
         mutableStateOf(true)
@@ -96,7 +98,8 @@ fun EachLessonScreen(
                         navController = navController,
                         lesson = lesson,
                         onOff = onOff,
-                        modifier = Modifier
+                        modifier = Modifier,
+                        savedViewModel = savedViewModel
                     )
 
                     1 -> Reading(
@@ -297,12 +300,10 @@ fun LessonVocab(
     navController: NavController,
     lesson: Int,
     modifier: Modifier,
-    onOff: Boolean
+    onOff: Boolean,
+    savedViewModel: SavedViewModel
 ) {
-
-    val list = remember {
-        mutableListOf<VocabData>()
-    }
+    val getList by savedViewModel.readAllData.observeAsState()
 
     LazyColumn(
         modifier = modifier.background(
@@ -319,11 +320,6 @@ fun LessonVocab(
                 it.id1
             }
         ) {
-            for (i in FAV_LIST) {
-                if (i.id1 == it.id1) {
-                    list.add(it)
-                }
-            }
 
             val animatedProgress = remember {
                 Animatable(
@@ -342,27 +338,18 @@ fun LessonVocab(
             }
 
             VocabItems(
-                saved = it,
+                vocabData = it,
                 darkTheme = darkTheme,
                 navController = navController,
                 onOff = onOff,
-                favourite = list.contains(it),
+                favourite = getList?.contains(it) == true,
                 modifier = Modifier.graphicsLayer(
                     scaleX = animatedProgress.value,
                     scaleY = animatedProgress.value
-                )
+                ),
+                savedViewModel = savedViewModel,
+                saveOnClick = {savedViewModel.deleteItem(it)}
             )
         }
     }
-}
-
-@Preview
-@Composable
-fun PreviewEachLessonScreen() {
-    EachLessonScreen(
-        darkTheme = true,
-        lesson = 1,
-        navController = NavController(LocalContext.current),
-        onBack = {}
-    )
 }

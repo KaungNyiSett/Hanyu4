@@ -20,21 +20,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.enzhongwen.hanyu4.db.SavedDatabase
-import com.enzhongwen.hanyu4.db.SavedRepository
+import com.enzhongwen.hanyu4.db.SavedViewModel
 import com.enzhongwen.hanyu4.db.VocabData
-import com.enzhongwen.hanyu4.ui.theme.CustomPurple
 import com.enzhongwen.hanyu4.ui.theme.BlueLight
+import com.enzhongwen.hanyu4.ui.theme.CustomPurple
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -44,17 +43,14 @@ fun Favorites(
     modifier: Modifier = Modifier,
     darkMode:() -> Unit,
     endActivity: () -> Unit,
-    onBack:() -> Unit
-) {
-
-    var list = FAV_LIST
+    onBack:() -> Unit,
+    savedViewModel: SavedViewModel
+){
+    val getData by savedViewModel.readAllData.observeAsState()
 
     val deletedData = remember {
         mutableStateListOf<VocabData>()
     }
-
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     var openDialog by rememberSaveable {
         mutableStateOf(false)
@@ -65,6 +61,9 @@ fun Favorites(
             true
         )
     }
+
+    val scope = rememberCoroutineScope()
+
     val scaffoldState = rememberScaffoldState()
     Scaffold(
         scaffoldState = scaffoldState,
@@ -121,66 +120,70 @@ fun Favorites(
                     )
                     .fillMaxSize()
             ) {
-                items(
-                    items = list,
-                    key = {
-                        it.id1
-                    }
-                ) {
-                    Log.d("SHIT","ListComposed")
-                    AnimatedVisibility(
-                        visible = !deletedData.contains(it),
-                        enter = expandVertically(),
-                        exit = shrinkVertically(
-                            animationSpec = tween(
-                                durationMillis = 1000
-                            )
-                        )
-                    ) {
-                        val animatedProgress = remember {
-                            Animatable(
-                                initialValue = 0.8f
-                            )
+                if(getData != null){
+                    items(
+                        items = getData!!,
+                        key = {
+                            it.id1
                         }
-
-                        LaunchedEffect(Unit) {
-                            animatedProgress.animateTo(
-                                targetValue = 1f,
+                    ) {
+                        Log.d("SHIT","ListComposed")
+                        AnimatedVisibility(
+                            visible = !deletedData.contains(it),
+                            enter = expandVertically(),
+                            exit = shrinkVertically(
                                 animationSpec = tween(
-                                    durationMillis = 300,
-                                    easing = LinearEasing
+                                    durationMillis = 1000
                                 )
                             )
+                        ) {
+                            val animatedProgress = remember {
+                                Animatable(
+                                    initialValue = 0.8f
+                                )
+                            }
+
+                            LaunchedEffect(Unit) {
+                                animatedProgress.animateTo(
+                                    targetValue = 1f,
+                                    animationSpec = tween(
+                                        durationMillis = 300,
+                                        easing = LinearEasing
+                                    )
+                                )
+                            }
+
+                            VocabItems(
+                                vocabData = it,
+                                darkTheme = darkTheme,
+                                navController = navController,
+                                onOff = onOff,
+                                favourite = getData?.contains(it) == true,
+                                saveOnClick = {
+                                    deletedData.add(it)
+                                    scope.launch{
+                                        delay(1000)
+                                        savedViewModel.deleteItem(it)
+                                    }
+
+                                },
+                                modifier = Modifier.graphicsLayer(
+                                    scaleX = animatedProgress.value,
+                                    scaleY = animatedProgress.value
+                                ),
+                                savedViewModel = savedViewModel
+                            )
                         }
 
-                        VocabItems(
-                            saved = it,
-                            darkTheme = darkTheme,
-                            navController = navController,
-                            onOff = onOff,
-                            favourite = list.contains(it),
-                            saveOnClick = {
-                                deletedData.add(it)
-                            },
-                            modifier = Modifier.graphicsLayer(
-                                scaleX = animatedProgress.value,
-                                scaleY = animatedProgress.value
-                            )
-                        )
                     }
-
                 }
+
             }
             if (openDialog) {
                 DeleteDialog(
                     plusOnClick = {
-                        scope.launch {
-                            SavedRepository(
-                                SavedDatabase.getDatabase(context).savedDao()
-                            ).deleteAll()
-                        }
+                        savedViewModel.deleteAll()
                         openDialog = !openDialog
-                        list = mutableStateListOf()
                     },
                     minusOnClick = {
                         openDialog = !openDialog
@@ -190,18 +193,6 @@ fun Favorites(
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun PreviewFavorites() {
-    Favorites(
-        darkTheme = false,
-        navController = NavController(LocalContext.current),
-        darkMode = {},
-        endActivity = {},
-        onBack = {}
-    )
 }
 
 @Composable

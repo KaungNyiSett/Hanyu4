@@ -1,6 +1,7 @@
 package com.enzhongwen.hanyu4
 
 import android.media.MediaPlayer
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,7 +10,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.enzhongwen.hanyu4.data.b4all
+import com.enzhongwen.hanyu4.db.SavedViewModel
 import com.enzhongwen.hanyu4.db.VocabData
 import com.enzhongwen.hanyu4.ui.theme.BlueDark
 import com.enzhongwen.hanyu4.ui.theme.BlueLight
@@ -33,12 +38,18 @@ fun StrokeScreen(
     darkTheme: Boolean,
     navController: NavController,
     darkMode: () -> Unit,
-    endActivity: () -> Unit
+    endActivity: () -> Unit,
+    savedViewModel: SavedViewModel
 ) {
 
     val scaffoldState = rememberScaffoldState()
 
     val scrollState = rememberScrollState()
+
+    val getList by savedViewModel.readAllData.observeAsState()
+
+    val vocabData: VocabData = b4all[id1 - 499]
+
     Scaffold(
         topBar = {
             AppBarTop(
@@ -58,6 +69,47 @@ fun StrokeScreen(
                 darkMode = darkMode,
                 endActivity = endActivity
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    if (getList?.contains(vocabData) == true) {
+                        savedViewModel.deleteItem(vocabData)
+                    } else {
+                        savedViewModel.save(vocabData)
+                    }
+                },
+            ) {
+                Row(
+                    modifier = Modifier.padding(
+                        horizontal = 16.dp,
+                        vertical = 8.dp
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = null,
+                        tint = if (getList?.contains(vocabData) == true) {
+                            Color.Red
+                        } else {
+                            if(darkTheme){
+                                BlueLight
+                            }else{
+                                CustomPurple
+                            }
+
+                        }
+                    )
+                    AnimatedVisibility(visible = getList?.contains(vocabData) == true) {
+                        Text(
+                            text = "Saved",
+                            modifier = Modifier.padding(start = 5.dp)
+                        )
+                    }
+
+                }
+
+            }
         }
     ) {
         StrokeContent(

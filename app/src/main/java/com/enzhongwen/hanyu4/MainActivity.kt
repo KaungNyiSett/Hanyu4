@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,25 +15,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Observer
 import androidx.navigation.compose.rememberNavController
-import com.enzhongwen.hanyu4.db.SavedViewModel
-import com.enzhongwen.hanyu4.db.VocabData
 import com.google.accompanist.systemuicontroller.SystemUiController
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
-var FAV_LIST = mutableListOf<VocabData>()
-
 const val BANNER_ID = "ca-app-pub-5467193675789833/1041765141"
 
 const val INTERSTITIAL_ID = "ca-app-pub-5467193675789833/8687147415"
 
 class MainActivity : ComponentActivity() {
-
-    private val mSavedViewModel: SavedViewModel by viewModels()
 
     private lateinit var myPreference: MyPreference
 
@@ -44,12 +36,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        mSavedViewModel.readAllData.observe(
-            this
-        ){
-            FAV_LIST = it
-        }
 
         MobileAds.initialize(this@MainActivity)
 

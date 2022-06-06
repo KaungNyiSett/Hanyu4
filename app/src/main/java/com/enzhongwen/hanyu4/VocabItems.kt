@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.enzhongwen.hanyu4.db.SavedDatabase
 import com.enzhongwen.hanyu4.db.SavedRepository
+import com.enzhongwen.hanyu4.db.SavedViewModel
 import com.enzhongwen.hanyu4.db.VocabData
 import com.enzhongwen.hanyu4.ui.theme.BlueDark
 import com.enzhongwen.hanyu4.ui.theme.BlueLight
@@ -32,23 +33,16 @@ import kotlinx.coroutines.launch
 @Composable
 fun VocabItems(
     modifier: Modifier = Modifier,
-    saved: VocabData,
+    vocabData: VocabData,
     darkTheme: Boolean,
     navController: NavController,
     onOff: Boolean,
     favourite: Boolean,
     saveOnClick: () -> Unit = {},
+    savedViewModel: SavedViewModel
 ) {
 
-    var shit by rememberSaveable {
-        mutableStateOf(
-            favourite
-        )
-    }
-
     val context = LocalContext.current
-
-    val scope = rememberCoroutineScope()
 
     val cardColor = if (darkTheme) {
         Color.DarkGray
@@ -65,7 +59,7 @@ fun VocabItems(
     } else {
         CustomPurple
     }
-    val favouriteColor = if (shit) {
+    val favouriteColor = if (favourite) {
         Color.Red
     } else {
         iconColor
@@ -79,7 +73,7 @@ fun VocabItems(
             )
             .fillMaxWidth()
             .clickable {
-                navController.navigate(Screens.StrokeScreen.withArgs(saved.id1))
+                navController.navigate(Screens.StrokeScreen.withArgs(vocabData.id1))
             },
 
         backgroundColor = cardColor
@@ -104,19 +98,19 @@ fun VocabItems(
                 ) {
                     AnimatedVisibility(onOff) {
                         Text(
-                            text = saved.pinyin,
+                            text = vocabData.pinyin,
                             color = textColor,
                             fontSize = 13.sp
                         )
                     }
                     Text(
-                        text = saved.word,
+                        text = vocabData.word,
                         color = textColor,
                         fontSize = 22.sp
                     )
                     AnimatedVisibility(onOff) {
                         Text(
-                            text = stringResource(id = saved.definition),
+                            text = stringResource(id = vocabData.definition),
                             color = if (darkTheme) {
                                 BlueLight
                             } else {
@@ -129,7 +123,7 @@ fun VocabItems(
                 }
                 IconButton(
                     onClick = {
-                        val s = MediaPlayer.create(context, saved.sound)
+                        val s = MediaPlayer.create(context, vocabData.sound)
                         s.start()
                         s.setOnCompletionListener {
                             s.release()
@@ -154,25 +148,13 @@ fun VocabItems(
             )
             IconButton(
                 onClick = {
-                    saveOnClick()
-                    if (!shit) {
-                        scope.launch {
-                            SavedRepository(
-                                SavedDatabase.getDatabase(context).savedDao()
-                            ).save(saved)
-                        }
+                    if (!favourite) {
+                        savedViewModel.save(vocabData)
                         Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
-
-
                     } else {
-                        scope.launch {
-                            SavedRepository(
-                                SavedDatabase.getDatabase(context).savedDao()
-                            ).deleteItem(saved)
-                        }
+                        saveOnClick()
                         Toast.makeText(context, "Unsaved", Toast.LENGTH_SHORT).show()
                     }
-                    shit = !shit
                 }
 
             ) {
@@ -184,17 +166,4 @@ fun VocabItems(
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun PreviewVocabItems() {
-    val context = LocalContext.current
-    VocabItems(
-        saved = VocabData("我爱你", "wǒ ài nǐ", R.string.app_name, 22),
-        darkTheme = true,
-        navController = NavController(context),
-        onOff = true,
-        favourite = false
-    )
 }

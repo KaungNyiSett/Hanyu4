@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +24,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import com.enzhongwen.hanyu4.data.b4all
+import com.enzhongwen.hanyu4.db.SavedViewModel
 import com.enzhongwen.hanyu4.db.VocabData
 
 @Composable
@@ -30,7 +32,8 @@ fun AllVocab(
     darkTheme: Boolean,
     navController: NavController,
     darkMode:() -> Unit,
-    endActivity:() -> Unit
+    endActivity:() -> Unit,
+    savedViewModel: SavedViewModel
 ) {
     Log.d("TAG","Composed")
 
@@ -113,7 +116,8 @@ fun AllVocab(
                 darkTheme = darkTheme,
                 navController = navController,
                 onOff = onOff,
-                searchItem = searchItem
+                searchItem = searchItem,
+                savedViewModel = savedViewModel
             )
         }
     }
@@ -124,11 +128,10 @@ fun VocabList(
     darkTheme: Boolean,
     navController: NavController,
     onOff: Boolean,
-    searchItem: String
+    searchItem: String,
+    savedViewModel: SavedViewModel
 ) {
-    val list = remember {
-        mutableListOf<VocabData>()
-    }
+    val getList by savedViewModel.readAllData.observeAsState()
 
     val searchList = b4all.filter {
         val a = stringResource(id = it.definition)
@@ -159,11 +162,6 @@ fun VocabList(
                 it.id1
             }
         ) {
-            for(i in FAV_LIST){
-                if(i.id1 == it.id1){
-                    list.add(it)
-                }
-            }
 
             val animatedProgress = remember {
                 Animatable(
@@ -187,12 +185,14 @@ fun VocabList(
             )
 
             VocabItems(
-                saved = it,
+                vocabData = it,
                 darkTheme = darkTheme,
                 navController = navController,
                 onOff = onOff,
-                favourite = list.contains(it),
-                modifier = modifier
+                favourite = getList?.contains(it) == true,
+                modifier = modifier,
+                savedViewModel = savedViewModel,
+                saveOnClick = {savedViewModel.deleteItem(it)}
             )
         }
     }
